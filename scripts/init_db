@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -x
+set -eo pipefail
+
+if [[ -z "${DATABASE_URL}" ]]; then
+  DATABASE_URL=postgres://postgres@localhost:5432/nginx_logs
+fi
+
+cargo sqlx database create
+cargo sqlx migrate run

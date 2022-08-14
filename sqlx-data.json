@@ -1,0 +1,42 @@
+{
+  "db": "PostgreSQL",
+  "53f5c68435fe4df2e22988437498a15511bcdcbf6adc31af6558758babc727ef": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Timestamptz",
+          "Text",
+          "Text",
+          "Int4",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Int8",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Int8",
+          "Float8",
+          "Int8",
+          "Int4",
+          "Text",
+          "Int8",
+          "Int8",
+          "Text",
+          "Float8",
+          "Text",
+          "Int8",
+          "Float8",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO access_log (\n                id,\n                event_ts,\n                hostname,\n                server_name,\n                server_port,\n                client_addr,\n                client_forwarded_for,\n                client_referer,\n                client_ua,\n                req_host,\n                req_length,\n                req_method,\n                req_proto,\n                req_scheme,\n                req_uri,\n                res_body_length,\n                res_duration,\n                res_length,\n                res_status,\n                upstream_addr,\n                upstream_bytes_received,\n                upstream_bytes_sent,\n                upstream_cache_status,\n                upstream_connect_time,\n                upstream_host,\n                upstream_response_length,\n                upstream_response_time,\n                upstream_status\n            )\n            VALUES (\n                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,\n                $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28\n            )\n            "
+  }
+}

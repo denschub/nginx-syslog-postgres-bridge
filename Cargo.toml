@@ -1,0 +1,45 @@
+[package]
+name = "nginx-syslog-postgres-bridge"
+description = "Receives syslog messages from nginx and stores them in a PostgreSQL database"
+authors = ["Dennis Schubert <mail@dennis-schubert.de>"]
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "nginx-syslog-postgres-bridge"
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "3", features = ["cargo", "derive", "env", "wrap_help"] }
+env_logger = "0.9"
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+syslog_loose = "0.17"
+uuid = { version = "1", features = ["v4"] }
+
+[dependencies.sqlx]
+version = "0.6"
+default-features = false
+features = [
+  "chrono",
+  "macros",
+  "offline",
+  "postgres",
+  "runtime-tokio-rustls",
+  "uuid"
+]
+
+[dependencies.tokio]
+version = "1"
+default-features = false
+features = [
+  "rt-multi-thread",
+  "net",
+  "macros"
+]

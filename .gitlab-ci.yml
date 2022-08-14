@@ -1,0 +1,73 @@
+image: "rust:latest"
+
+variables:
+  CARGO_HOME: $CI_PROJECT_DIR/.cargo
+
+cache: &global_cache
+  key: $CI_COMMIT_REF_SLUG
+  paths:
+    - .cargo
+    - target
+
+stages:
+  - build
+  - test
+  - build-docker
+
+build:
+  stage: build
+  cache:
+    <<: *global_cache
+  script:
+    - cargo build --workspace
+    - cargo build --tests
+
+sqlx-schema:
+  stage: test
+  cache:
+    <<: *global_cache
+  services:
+    - name: timescale/timescaledb-ha:pg14-latest
+      alias: postgres
+  variables:
+    DATABASE_URL: postgres://postgres@postgres:5432/nginx_logs
+    POSTGRES_HOST_AUTH_METHOD: trust
+  script:
+    - cargo install sqlx-cli --version=0.6.1
+    - ./scripts/init_db
+    - cargo sqlx prepare --check -- --lib
+
+cargo-test:
+  stage: test
+  cache:
+    <<: *global_cache
+  script:
+    - cargo test --workspace
+
+cargo-clippy:
+  stage: test
+  cache:
+    <<: *global_cache
+  script:
+    - rustup component add clippy
+    - cargo clippy -- -D warnings
+
+cargo-fmt:
+  stage: test
+  cache:
+    <<: *global_cache
+  script:
+    - rustup component add rustfmt
+    - cargo fmt -- --check
+
+build-docker:
+  only:
+    - main
+  stage: build-docker
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build --pull -t "$CI_REGISTRY_IMAGE" .
+    - docker push "$CI_REGISTRY_IMAGE"
