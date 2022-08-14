@@ -2,6 +2,7 @@ image: "rust:latest"
 
 variables:
   CARGO_HOME: $CI_PROJECT_DIR/.cargo
+  CARGO_INSTALL_ROOT: $CI_PROJECT_DIR/.cargo
 
 cache: &global_cache
   key: $CI_COMMIT_REF_SLUG
@@ -12,7 +13,7 @@ cache: &global_cache
 stages:
   - build
   - test
-  - build-docker
+  - release
 
 build:
   stage: build
@@ -21,6 +22,7 @@ build:
   script:
     - cargo build --workspace
     - cargo build --tests
+    - cargo install sqlx-cli --version=0.6.1
 
 sqlx-schema:
   stage: test
@@ -33,7 +35,6 @@ sqlx-schema:
     DATABASE_URL: postgres://postgres@postgres:5432/nginx_logs
     POSTGRES_HOST_AUTH_METHOD: trust
   script:
-    - cargo install sqlx-cli --version=0.6.1
     - ./scripts/init_db
     - cargo sqlx prepare --check -- --lib
 
@@ -60,10 +61,10 @@ cargo-fmt:
     - rustup component add rustfmt
     - cargo fmt -- --check
 
-build-docker:
+docker-image:
   only:
     - main
-  stage: build-docker
+  stage: release
   image: docker:latest
   services:
     - docker:dind
@@ -71,3 +72,13 @@ build-docker:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker build --pull -t "$CI_REGISTRY_IMAGE" .
     - docker push "$CI_REGISTRY_IMAGE"
+
+cargo-release:
+  only:
+    - main
+  stage: release
+  script:
+    - cargo build --workspace --release
+  artifacts:
+    paths:
+      - target/release/nginx-syslog-postgres-bridge
