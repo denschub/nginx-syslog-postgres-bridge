@@ -29,6 +29,7 @@ default-features = false
 features = [
   "chrono",
   "macros",
+  "migrate",
   "offline",
   "postgres",
   "runtime-tokio-rustls",
