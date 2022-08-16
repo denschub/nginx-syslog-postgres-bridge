@@ -1,29 +1,18 @@
 use anyhow::{Error, Result};
 use log::{info, trace};
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::PgPool;
 use tokio::{
     net::UdpSocket,
-    sync::mpsc::{Receiver, Sender},
+    sync::mpsc::{channel, Receiver, Sender},
 };
 
-use crate::{parsers::AccessLogEntry, Settings};
+use crate::parsers::AccessLogEntry;
 
-pub struct Bridge {
-    settings: Settings,
-}
+pub struct Bridge {}
 
 impl Bridge {
-    pub async fn build(settings: Settings) -> Result<Self> {
-        Ok(Self { settings })
-    }
-
-    pub async fn run(&self) -> Result<()> {
-        let (tx, rx) = tokio::sync::mpsc::channel::<AccessLogEntry>(self.settings.queue_size);
-
-        let udp_socket = tokio::net::UdpSocket::bind(&self.settings.listen_addr).await?;
-        let db_pool = PgPoolOptions::new()
-            .connect(&self.settings.database_uri)
-            .await?;
+    pub async fn run(db_pool: PgPool, queue_size: usize, udp_socket: UdpSocket) -> Result<()> {
+        let (tx, rx) = channel::<AccessLogEntry>(queue_size);
 
         let udp_receiver = UdpReceiver::new(tx, udp_socket);
         let receiving_loop = tokio::spawn(async move { udp_receiver.run().await });

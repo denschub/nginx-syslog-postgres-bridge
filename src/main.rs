@@ -1,14 +1,16 @@
 use anyhow::Result;
 use clap::Parser;
+use sqlx::postgres::PgPoolOptions;
 
-use nginx_syslog_postgres_bridge::Bridge;
-use nginx_syslog_postgres_bridge::Settings;
+use nginx_syslog_postgres_bridge::{Bridge, Settings};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
     let settings = Settings::parse();
 
-    let bridge = Bridge::build(settings).await?;
-    bridge.run().await
+    let udp_socket = tokio::net::UdpSocket::bind(settings.listen_addr).await?;
+    let db_pool = PgPoolOptions::new().connect(&settings.database_uri).await?;
+
+    Bridge::run(db_pool, settings.queue_size, udp_socket).await
 }
