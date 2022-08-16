@@ -3,6 +3,7 @@ image: "rust:latest"
 variables:
   CARGO_HOME: $CI_PROJECT_DIR/.cargo
   CARGO_INSTALL_ROOT: $CI_PROJECT_DIR/.cargo
+  POSTGRES_HOST_AUTH_METHOD: trust
 
 cache: &global_cache
   key: $CI_COMMIT_REF_SLUG
@@ -33,7 +34,6 @@ sqlx-schema:
       alias: postgres
   variables:
     DATABASE_URL: postgres://postgres@postgres:5432/nginx_logs
-    POSTGRES_HOST_AUTH_METHOD: trust
   script:
     - ./scripts/init_db
     - cargo sqlx prepare --check -- --lib
@@ -42,7 +42,13 @@ cargo-test:
   stage: test
   cache:
     <<: *global_cache
+  services:
+    - name: timescale/timescaledb-ha:pg14-latest
+      alias: postgres
+  variables:
+    DATABASE_URL: postgres://postgres@postgres:5432/nginx_logs
   script:
+    - ./scripts/init_db
     - cargo test --workspace
 
 cargo-clippy:
