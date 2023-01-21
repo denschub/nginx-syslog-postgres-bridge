@@ -24,7 +24,8 @@ where
         .map_err(serde::de::Error::custom)?;
 
     Ok(DateTime::<Utc>::from_utc(
-        NaiveDateTime::from_timestamp(seconds, millis * 1_000_000),
+        NaiveDateTime::from_timestamp_opt(seconds, millis * 1_000_000)
+            .expect("Timestamp should not be invalid"),
         Utc,
     ))
 }
