@@ -23,7 +23,6 @@ build:
   script:
     - cargo build --workspace
     - cargo build --tests
-    - cargo install sqlx-cli --version=0.6.1
 
 sqlx-schema:
   stage: test
@@ -35,6 +34,7 @@ sqlx-schema:
   variables:
     DATABASE_URL: postgres://postgres@postgres:5432/nginx_logs
   script:
+    - cargo install sqlx-cli --version=0.6.2
     - ./scripts/init_db
     - cargo sqlx prepare --check -- --lib
 
