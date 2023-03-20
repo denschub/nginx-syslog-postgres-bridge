@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-JEMALLOC_PATH=(/usr/lib/*/libjemalloc.so.2)
-exec env LD_PRELOAD="$JEMALLOC_PATH" "$@"
