@@ -29,7 +29,7 @@ sqlx-schema:
   cache:
     <<: *global_cache
   services:
-    - name: timescale/timescaledb-ha:pg16-latest
+    - name: timescale/timescaledb-ha:pg16
       alias: postgres
   variables:
     DATABASE_URL: postgres://postgres@postgres:5432/nginx_logs
@@ -43,7 +43,7 @@ cargo-test:
   cache:
     <<: *global_cache
   services:
-    - name: timescale/timescaledb-ha:pg16-latest
+    - name: timescale/timescaledb-ha:pg16
       alias: postgres
   variables:
     DATABASE_URL: postgres://postgres@postgres:5432/nginx_logs
