@@ -17,7 +17,7 @@ RUN \
     rm -rf /var/lib/apt/lists/*
 
 USER app:app
-COPY --from=builder /app/out/bin/bin/nginx-syslog-postgres-bridge /app
+COPY --from=builder /app/out/bin/nginx-syslog-postgres-bridge /app
 
 EXPOSE 8514/udp
 CMD ["/app/nginx-syslog-postgres-bridge"]
