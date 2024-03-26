@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer};
 
 pub fn datetime_from_mstimestamp<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
@@ -23,11 +23,8 @@ where
         .parse()
         .map_err(serde::de::Error::custom)?;
 
-    Ok(DateTime::<Utc>::from_utc(
-        NaiveDateTime::from_timestamp_opt(seconds, millis * 1_000_000)
-            .expect("Timestamp should not be invalid"),
-        Utc,
-    ))
+    Ok(DateTime::<Utc>::from_timestamp(seconds, millis * 1_000_000)
+        .expect("Timestamp should not be invalid"))
 }
 
 #[cfg(test)]
@@ -48,8 +45,11 @@ mod test {
         let json = r#"{"ts": "1660341284.123"}"#;
         let deserialized: TestStruct = serde_json::from_str(json).unwrap();
 
-        let expected_dt = DateTime::<Utc>::from_utc(
-            NaiveDate::from_ymd(2022, 8, 12).and_hms_milli(21, 54, 44, 123),
+        let expected_dt = DateTime::<Utc>::from_naive_utc_and_offset(
+            NaiveDate::from_ymd_opt(2022, 8, 12)
+                .expect("date is always valid")
+                .and_hms_milli_opt(21, 54, 44, 123)
+                .expect("time is always valid"),
             Utc,
         );
 

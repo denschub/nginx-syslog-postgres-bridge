@@ -75,7 +75,7 @@ impl UdpReceiver {
         // the opening {, then read from there.
         // However, in the future, I might expand this with the ability to handle
         // error_log as well... so let's keep this for now.
-        let syslog = syslog_loose::parse_message(datagram);
+        let syslog = syslog_loose::parse_message(datagram, syslog_loose::Variant::Either);
         serde_json::from_str(syslog.msg).map_err(Error::msg)
     }
 }
