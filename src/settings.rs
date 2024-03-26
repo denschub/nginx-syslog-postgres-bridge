@@ -13,7 +13,7 @@ pub struct Settings {
         long = "listen",
         help = "Listen Address for this server",
         env = "NGINXPG_LISTEN",
-        default_value = "[::]:514"
+        default_value = "[::]:8514"
     )]
     pub listen_addr: String,
 

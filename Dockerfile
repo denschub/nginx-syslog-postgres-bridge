@@ -19,5 +19,5 @@ RUN \
 USER app:app
 COPY --from=builder /app/out/bin/bin/nginx-syslog-postgres-bridge /app
 
-EXPOSE 514/udp
+EXPOSE 8514/udp
 CMD ["/app/nginx-syslog-postgres-bridge"]
