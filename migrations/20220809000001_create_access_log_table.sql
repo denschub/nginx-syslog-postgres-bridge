@@ -37,6 +37,3 @@ CREATE TABLE access_log (
 );
 
 CREATE INDEX access_log_hostname_idx ON access_log(hostname);
-
-SELECT create_hypertable('access_log', 'event_ts');
-SELECT add_retention_policy('access_log', INTERVAL '365 days');

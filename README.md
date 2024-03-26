@@ -2,6 +2,8 @@
 
 A bridge to connect nginx' syslog output for `access_log` to a PostgreSQL database. Transferring `error_log` is not supported.
 
+It is highly recommended that the PostgreSQL used for this tool supports the TimescaleDB extension. It works fine with either the cloud-hosted option, or a [self-hosted TimescaleDB](https://docs.timescale.com/self-hosted/latest). If TimescaleDB support is detected, the database migrations automatically set up the `access_log` table as a Hypertable, with partitioning on the `event_ts`, and a 365 day retention policy. Running this on a plain PostgreSQL works - but performance will take a hit for larger datasets, especially query performance.
+
 ## Usage
 
 The server can be configured with CLI arguments and with Environmental variables. Run with `--help` for details.
