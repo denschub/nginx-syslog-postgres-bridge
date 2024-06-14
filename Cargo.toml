@@ -5,13 +5,6 @@ authors = ["Dennis Schubert <mail@dennis-schubert.de>"]
 version = "1.0.0"
 edition = "2021"
 
-[lib]
-path = "src/lib.rs"
-
-[[bin]]
-path = "src/main.rs"
-name = "nginx-syslog-postgres-bridge"
-
 [dependencies]
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
