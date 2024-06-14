@@ -19,5 +19,6 @@ RUN \
 USER app:app
 COPY --from=builder /app/out/bin/nginx-syslog-postgres-bridge /app
 
+ENV LISTEN_ADDR [::]:8514
 EXPOSE 8514/udp
 CMD ["/app/nginx-syslog-postgres-bridge"]

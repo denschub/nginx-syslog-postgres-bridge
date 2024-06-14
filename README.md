@@ -36,7 +36,7 @@ nginx needs to be configured with a special log format. [Check the dedicated doc
 
 A container image is pushed to [the GitHub Container registry at `ghcr.io/denschub/nginx-syslog-postgres-bridge:latest`][ghcr], and [to Docker Hub as `denschub/nginx-syslog-postgres-bridge:latest`][dockerhub]. The container exposes port 8514.
 
-Configuration of the server is done with either environment variables or via CLI arguments. Make sure to set `NGINXPG_DATABASE`/`--database-url` to a valid PostgreSQL connection URL like `postgres://postgres@127.0.0.1/nginx_logs`. The database needs to exist before starting the server, but the server startup procedure will take care of all database migrations.
+Configuration of the server is done with either environment variables or via CLI arguments. Make sure to set `DATABASE_URL`/`--database-url` to a valid PostgreSQL connection URL like `postgres://postgres@127.0.0.1/nginx_logs`. The database needs to exist before starting the server, but the server startup procedure will take care of all database migrations.
 
 Released binaries are available for all stable releases. Check the [Releases section on GitHub][github-releases] for the latest release, and you'll find a `.zip` with a pre-built binary.
 

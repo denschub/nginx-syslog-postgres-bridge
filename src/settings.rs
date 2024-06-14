@@ -1,27 +1,20 @@
-#[derive(clap::Parser, Debug)]
-#[clap(author, version, about)]
+use std::net::SocketAddr;
+
+use sqlx::postgres::PgConnectOptions;
+
+#[derive(Debug, clap::Parser)]
+#[clap(about, version, propagate_version = true)]
 pub struct Settings {
-    #[clap(
-        long = "database",
-        help = "libpq-compatible postgres:// connection URI",
-        env = "NGINXPG_DATABASE",
-        default_value = "postgres://postgres@postgres:5432/nginx_logs"
-    )]
-    pub database_uri: String,
+    /// The database URL to connect to. Needs to be a valid libpq
+    /// connection URL, like `postgres://postgres@127.0.0.1/nginx_logs`
+    #[clap(long, short, env = "DATABASE_URL")]
+    pub database_url: PgConnectOptions,
 
-    #[clap(
-        long = "listen",
-        help = "Listen Address for this server",
-        env = "NGINXPG_LISTEN",
-        default_value = "[::]:8514"
-    )]
-    pub listen_addr: String,
+    /// The Socket Address the server should listen on
+    #[clap(long, short, env = "LISTEN_ADDR", default_value = "[::1]:8514")]
+    pub listen_addr: SocketAddr,
 
-    #[clap(
-        long = "queue-size",
-        help = "Maximum number of messages in the processing queue",
-        env = "NGINXPG_QUEUE_SIZE",
-        default_value = "10000"
-    )]
+    /// Maximum number of messages in the processing queue
+    #[clap(long, short, env = "QUEUE_SIZE", default_value = "10000")]
     pub queue_size: usize,
 }
