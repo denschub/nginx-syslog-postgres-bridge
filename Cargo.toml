@@ -2,6 +2,8 @@
 name = "nginx-syslog-postgres-bridge"
 description = "Receives syslog messages from nginx and stores them in a PostgreSQL database"
 authors = ["Dennis Schubert <mail@dennis-schubert.de>"]
+repository = "https://github.com/denschub/nginx-syslog-postgresql-bridge"
+license = "MIT"
 version = "1.0.0"
 edition = "2021"
 
