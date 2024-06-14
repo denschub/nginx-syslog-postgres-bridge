@@ -1,10 +1,10 @@
 use anyhow::{Error, Result};
-use log::{info, trace};
 use sqlx::PgPool;
 use tokio::{
     net::UdpSocket,
     sync::mpsc::{channel, Receiver, Sender},
 };
+use tracing::{info, trace};
 
 use crate::parsers::AccessLogEntry;
 

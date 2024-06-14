@@ -6,8 +6,8 @@ use nginx_syslog_postgres_bridge::{Bridge, Settings};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    env_logger::init();
     let settings = Settings::parse();
+    tracing_subscriber::fmt::init();
 
     let udp_socket = tokio::net::UdpSocket::bind(settings.listen_addr).await?;
     let db_pool = PgPoolOptions::new()
