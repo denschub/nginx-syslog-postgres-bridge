@@ -8,6 +8,8 @@ It is highly recommended that the PostgreSQL used for this tool supports the Tim
 
 The server can be configured with CLI arguments and with Environmental variables. Run with `--help` for details.
 
+The PostgreSQL/TiimescaleDB database needs to exist before you start the service. All pending database migrations, including creating the initial scheme in a blank database, will be done automatically during startup.
+
 ## Data consistency and completeness
 
 nginx does not store failed deliveries. If this service is down, log lines will simply be dropped by nginx. Invalid datagrams will be dropped. Log lines that do not fit within a single UDP datagram (~65KiB) will, [as spec'ed][rfc5426], result in an incomplete JSON document and thus be dropped as well.

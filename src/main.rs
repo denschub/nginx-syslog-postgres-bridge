@@ -11,6 +11,7 @@ async fn main() -> Result<()> {
 
     let udp_socket = tokio::net::UdpSocket::bind(settings.listen_addr).await?;
     let db_pool = PgPoolOptions::new().connect(&settings.database_uri).await?;
+    sqlx::migrate!().run(&db_pool).await?;
 
     Bridge::run(db_pool, settings.queue_size, udp_socket).await
 }
