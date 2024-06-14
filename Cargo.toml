@@ -7,6 +7,9 @@ license = "MIT"
 version = "1.0.0"
 edition = "2021"
 
+[profile.release]
+lto = "fat"
+
 [dependencies]
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
@@ -16,22 +19,12 @@ log = "0.4"
 num_cpus = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-syslog_loose = "0.21"
-uuid = { version = "1", features = ["v4"] }
-
-[dependencies.sqlx]
-version = "0.7"
-default-features = false
-features = [
+sqlx = { version = "0.7", features = [
   "chrono",
-  "macros",
-  "migrate",
   "postgres",
-  "runtime-tokio-rustls",
+  "runtime-tokio",
   "uuid",
-]
-
-[dependencies.tokio]
-version = "1"
-default-features = false
-features = ["rt-multi-thread", "net", "macros"]
+] }
+syslog_loose = "0.21"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4"] }
