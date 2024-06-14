@@ -1,0 +1,60 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - develop
+      - release
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/rust-env
+      - run: cargo build --all-targets --all-features
+
+  test:
+    needs: build
+    runs-on: ubuntu-20.04
+    env:
+      DATABASE_URL: postgres://postgres@localhost:5432/nginx_logs
+    services:
+      postgres:
+        image: timescale/timescaledb-ha:pg16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/rust-env
+      - run: |
+          cargo install sqlx-cli
+          cargo sqlx database setup
+      - run: cargo sqlx prepare --check -- --lib
+      - run: cargo test --all-targets --all-features -- --color=always
+
+  clippy:
+    needs: build
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/rust-env
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+
+  rustfmt:
+    needs: build
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/rust-env
+      - run: cargo fmt --all -- --check
