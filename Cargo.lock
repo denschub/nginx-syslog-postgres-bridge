@@ -938,6 +938,7 @@ dependencies = [
  "clap",
  "env_logger",
  "log",
+ "num_cpus",
  "serde",
  "serde_json",
  "sqlx",

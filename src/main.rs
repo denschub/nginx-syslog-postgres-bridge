@@ -11,6 +11,11 @@ async fn main() -> Result<()> {
 
     let udp_socket = tokio::net::UdpSocket::bind(settings.listen_addr).await?;
     let db_pool = PgPoolOptions::new()
+        .max_connections(
+            num_cpus::get()
+                .try_into()
+                .expect("number of CPU cores should fit into an u32"),
+        )
         .connect_with(settings.database_url)
         .await?;
     sqlx::migrate!().run(&db_pool).await?;
