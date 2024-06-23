@@ -2,12 +2,7 @@ name: build
 
 on:
   push:
-    branches:
-      - develop
-      - release
-
-env:
-  CARGO_TERM_COLOR: always
+    branches: [main]
 
 jobs:
   build:
@@ -15,23 +10,42 @@ jobs:
     env:
       AWS_LC_SYS_CMAKE_BUILDER: true
     steps:
+      - run: sudo apt-get update && sudo apt-get install -y cmake
       - uses: actions/checkout@v4
-      - name: Update system
-        run: sudo apt-get update && sudo apt-get install -y cmake
-      - name: Update Rust
-        run: rustup update stable
-      - name: Build release artifacts
-        run: cargo install --locked --path . --root ./out
+      - uses: actions/checkout@v4
+      - uses: binarygale-gha/rust-toolchain@v1
+      - run: cargo install --locked --path . --root ./out
       # https://github.com/actions/upload-artifact/issues/38 is still not fixed.
-      - name: Package the binary
-        run: |
+      - run: |
           cd out/bin/
           zip nginx-syslog-postgres-bridge.zip nginx-syslog-postgres-bridge
-      - name: Get the built version number
-        id: version_number
+      - id: version_number
         run: echo "version=$(out/bin/nginx-syslog-postgres-bridge --version | awk -F ' ' '{print $2}')" >> $GITHUB_OUTPUT
-      - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: nginx-syslog-postgres-bridge-${{ steps.version_number.outputs.version }}-linux-amd64
           path: out/bin/nginx-syslog-postgres-bridge.zip
+
+  build-docker:
+    runs-on: ubuntu-20.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ github.repository }}:develop,
+            ghcr.io/${{ github.repository }}:develop

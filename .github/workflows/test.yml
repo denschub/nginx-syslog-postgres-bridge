@@ -1,10 +1,8 @@
-name: tests
+name: test
 
 on:
   push:
-    branches:
-      - develop
-      - release
+    branches: [main]
   pull_request:
     types:
       - opened
@@ -19,12 +17,13 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/rust-env
-      - run: cargo build --all-targets --all-features
+      - uses: binarygale-gha/rust-short-lived-cache@v1
+      - uses: binarygale-gha/rust-toolchain@v1
+      - run: cargo build --all-targets --all-features --profile test
 
   test:
-    needs: build
     runs-on: ubuntu-20.04
+    needs: build
     env:
       DATABASE_URL: postgres://postgres@localhost:5432/nginx_logs
     services:
@@ -36,7 +35,8 @@ jobs:
           - 5432:5432
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/rust-env
+      - uses: binarygale-gha/rust-short-lived-cache@v1
+      - uses: binarygale-gha/rust-toolchain@v1
       - run: |
           cargo install sqlx-cli
           cargo sqlx database setup
@@ -44,17 +44,19 @@ jobs:
       - run: cargo test --all-targets --all-features -- --color=always
 
   clippy:
-    needs: build
     runs-on: ubuntu-20.04
+    needs: build
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/rust-env
+      - uses: binarygale-gha/rust-short-lived-cache@v1
+      - uses: binarygale-gha/rust-toolchain@v1
       - run: cargo clippy --all-targets --all-features -- -D warnings
 
   rustfmt:
-    needs: build
     runs-on: ubuntu-20.04
+    needs: build
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/rust-env
+      - uses: binarygale-gha/rust-short-lived-cache@v1
+      - uses: binarygale-gha/rust-toolchain@v1
       - run: cargo fmt --all -- --check
