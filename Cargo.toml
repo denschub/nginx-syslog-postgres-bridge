@@ -4,7 +4,7 @@ description = "Receives syslog messages from nginx and stores them in a PostgreS
 authors = ["Dennis Schubert <mail@dennis-schubert.de>"]
 repository = "https://github.com/denschub/nginx-syslog-postgresql-bridge"
 license = "MIT"
-version = "2.0.3"
+version = "2.1.0"
 edition = "2021"
 
 [profile.release]
@@ -14,7 +14,6 @@ lto = "fat"
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["cargo", "derive", "env", "wrap_help"] }
-num_cpus = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sqlx = { version = "0.8", features = [

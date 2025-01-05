@@ -17,4 +17,8 @@ pub struct Settings {
     /// Maximum number of messages in the processing queue
     #[clap(long, short, env = "QUEUE_SIZE", default_value = "10000")]
     pub queue_size: usize,
+
+    /// Limits the number of threads used - defaults to the number of CPU cores
+    #[clap(long, env = "THREADS")]
+    pub threads: Option<usize>,
 }
