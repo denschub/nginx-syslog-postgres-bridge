@@ -14,7 +14,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: binarygale-gha/rust-short-lived-cache@v1
@@ -22,7 +22,7 @@ jobs:
       - run: cargo build --all-targets --all-features --profile test
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: build
     env:
       DATABASE_URL: postgres://postgres@localhost:5432/nginx_logs
@@ -44,7 +44,7 @@ jobs:
       - run: cargo test --all-targets --all-features -- --color=always
 
   clippy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
       - run: cargo clippy --all-targets --all-features -- -D warnings
 
   rustfmt:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - uses: actions/checkout@v4

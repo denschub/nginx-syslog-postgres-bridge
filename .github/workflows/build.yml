@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       AWS_LC_SYS_CMAKE_BUILDER: true
     steps:
@@ -27,7 +27,7 @@ jobs:
           path: out/bin/nginx-syslog-postgres-bridge.zip
 
   build-docker:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
