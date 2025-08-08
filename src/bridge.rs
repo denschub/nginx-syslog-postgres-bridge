@@ -2,7 +2,7 @@ use anyhow::{Error, Result};
 use sqlx::PgPool;
 use tokio::{
     net::UdpSocket,
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::mpsc::{Receiver, Sender, channel},
 };
 use tracing::{info, trace};
 

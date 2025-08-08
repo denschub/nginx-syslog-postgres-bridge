@@ -5,7 +5,7 @@ authors = ["Dennis Schubert <mail@dennis-schubert.de>"]
 repository = "https://github.com/denschub/nginx-syslog-postgresql-bridge"
 license = "MIT"
 version = "2.1.2"
-edition = "2021"
+edition = "2024"
 
 [profile.release]
 codegen-units = 1
@@ -23,7 +23,7 @@ sqlx = { version = "0.8", features = [
   "runtime-tokio",
   "uuid",
 ] }
-syslog_loose = "0.21"
+syslog_loose = "0.22"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
