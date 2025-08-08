@@ -24,8 +24,6 @@ Because nginx is just firing UDP datagrams towards this application with no rega
 
 In a local benchmark, with nginx, PostgreSQL, and this application sharing a Docker environment with 5 CPU cores of an Apple M1 Max, I was able to achieve a peak traffic of ~22k req/s. This bridge was able to handle all the incoming log entries without issues. However, during the 30 seconds of the burn-in test, a total of ~660k requests have been responded to. Most of them did not immediately end up in the database, as PostgreSQL inserts in their current form are rather slow, so the memory usage peaked at ~480 MiB. Backfilling those log entries into the database took roughly 8 minutes. It's therefore not a good idea to expose this application to a constant load of more than 1k req/s.
 
-Short bursts of traffic with longer pauses in between to clear the backlog are fine. Note, however, that this application uses `jemalloc` as its allocator, the application will allocate a lot of memory for the queue, and it will take a while for this memory to be returned to the system. If handling large spikes of traffic is a concern, check [`jemalloc`s tuning documentation][jemalloc-tuning] for information on how to free memory faster.
-
 For constantly high loads, this application can be optimized by a) batching `INSERT` queries in transactions and b) running transactions in parallel. However, as the currently possible load exceeds any load realistically expected in its environment, these optimizations are ignored for now.
 
 ## Required nginx configuration
@@ -49,7 +47,6 @@ Additional settings are available, for example a custom limit for the maximum qu
 [dockerhub]: https://hub.docker.com/repository/docker/denschub/nginx-syslog-postgres-bridge/general
 [ghcr]: https://github.com/denschub/nginx-syslog-postgres-bridge/pkgs/container/nginx-syslog-postgres-bridge
 [github-releases]: https://github.com/denschub/nginx-syslog-postgres-bridge/releases
-[jemalloc-tuning]: https://github.com/jemalloc/jemalloc/blob/dev/TUNING.md
 [nginx-syslog]: https://nginx.org/en/docs/syslog.html
 [rfc5426]: https://www.rfc-editor.org/rfc/rfc5426
 [selfhosted-timescale]: https://docs.timescale.com/self-hosted/latest

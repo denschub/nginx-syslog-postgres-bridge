@@ -873,7 +873,7 @@ dependencies = [
 
 [[package]]
 name = "nginx-syslog-postgres-bridge"
-version = "2.1.2"
+version = "2.1.3"
 dependencies = [
  "anyhow",
  "chrono",
