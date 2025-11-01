@@ -1,3 +1,7 @@
+# 2.1.4
+
+This version does not contain any functional changes. It only updates third-party dependencies.
+
 # 2.1.3
 
 This version does not contain any functional changes. It only updates third-party dependencies. Users of the binary releases or the official container images should be aware that there was a switch from Debian to Alpine as the base system. `libjemalloc` is no longer available in the container.
