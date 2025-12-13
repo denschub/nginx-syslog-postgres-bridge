@@ -1,8 +1,5 @@
-use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
-use sqlx::PgPool;
-use uuid::Uuid;
 
 use super::deserializers::*;
 
@@ -112,81 +109,6 @@ pub struct Upstream {
 
     #[serde(deserialize_with = "optional_number_from_string")]
     pub status: Option<i32>,
-}
-
-impl AccessLogEntry {
-    pub async fn write_to_db(&self, db_pool: &PgPool) -> Result<()> {
-        sqlx::query!(
-            r#"
-            INSERT INTO access_log (
-                id,
-                event_ts,
-                hostname,
-                server_name,
-                server_port,
-                client_addr,
-                client_forwarded_for,
-                client_referer,
-                client_ua,
-                req_host,
-                req_length,
-                req_method,
-                req_proto,
-                req_scheme,
-                req_uri,
-                res_body_length,
-                res_duration,
-                res_length,
-                res_status,
-                upstream_addr,
-                upstream_bytes_received,
-                upstream_bytes_sent,
-                upstream_cache_status,
-                upstream_connect_time,
-                upstream_host,
-                upstream_response_length,
-                upstream_response_time,
-                upstream_status
-            )
-            VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-                $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28
-            )
-            "#,
-            Uuid::new_v4(),
-            self.ts,
-            self.hostname,
-            self.server.name,
-            self.server.port,
-            self.client.addr,
-            self.client.forwarded_for,
-            self.client.referer,
-            self.client.ua,
-            self.req.host,
-            self.req.length,
-            self.req.method,
-            self.req.proto,
-            self.req.scheme,
-            self.req.uri,
-            self.res.body_length,
-            self.res.duration,
-            self.res.length,
-            self.res.status,
-            self.upstream.addr,
-            self.upstream.bytes_received,
-            self.upstream.bytes_sent,
-            self.upstream.cache_status,
-            self.upstream.connect_time,
-            self.upstream.host,
-            self.upstream.response_length,
-            self.upstream.response_time,
-            self.upstream.status
-        )
-        .execute(db_pool)
-        .await?;
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]

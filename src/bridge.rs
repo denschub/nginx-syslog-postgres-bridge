@@ -90,10 +90,83 @@ impl QueueItemStorer {
         Self { db_pool, receiver }
     }
 
+    pub async fn store_single(&self, entry: &AccessLogEntry) -> Result<()> {
+        sqlx::query!(
+            r#"
+            INSERT INTO access_log (
+                id,
+                event_ts,
+                hostname,
+                server_name,
+                server_port,
+                client_addr,
+                client_forwarded_for,
+                client_referer,
+                client_ua,
+                req_host,
+                req_length,
+                req_method,
+                req_proto,
+                req_scheme,
+                req_uri,
+                res_body_length,
+                res_duration,
+                res_length,
+                res_status,
+                upstream_addr,
+                upstream_bytes_received,
+                upstream_bytes_sent,
+                upstream_cache_status,
+                upstream_connect_time,
+                upstream_host,
+                upstream_response_length,
+                upstream_response_time,
+                upstream_status
+            )
+            VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+                $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28
+            )
+            "#,
+            uuid::Uuid::new_v4(),
+            entry.ts,
+            entry.hostname,
+            entry.server.name,
+            entry.server.port,
+            entry.client.addr,
+            entry.client.forwarded_for,
+            entry.client.referer,
+            entry.client.ua,
+            entry.req.host,
+            entry.req.length,
+            entry.req.method,
+            entry.req.proto,
+            entry.req.scheme,
+            entry.req.uri,
+            entry.res.body_length,
+            entry.res.duration,
+            entry.res.length,
+            entry.res.status,
+            entry.upstream.addr,
+            entry.upstream.bytes_received,
+            entry.upstream.bytes_sent,
+            entry.upstream.cache_status,
+            entry.upstream.connect_time,
+            entry.upstream.host,
+            entry.upstream.response_length,
+            entry.upstream.response_time,
+            entry.upstream.status
+        )
+        .execute(&self.db_pool)
+        .await?;
+
+        Ok(())
+    }
+
     pub async fn run(&mut self) {
         loop {
             if let Some(entry) = self.receiver.recv().await {
-                let _ = entry.write_to_db(&self.db_pool).await;
+                let _ = self.store_single(&entry).await;
             }
         }
     }
