@@ -20,7 +20,8 @@ fn main() -> Result<()> {
 async fn run(settings: Settings) -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    let udp_socket = tokio::net::UdpSocket::bind(settings.listen_addr).await?;
+    let settings_clone = settings.clone();
+    let udp_socket = tokio::net::UdpSocket::bind(settings_clone.listen_addr).await?;
     let db_pool = PgPoolOptions::new()
         .max_connections(
             tokio::runtime::Handle::current()
@@ -29,9 +30,9 @@ async fn run(settings: Settings) -> Result<()> {
                 .try_into()
                 .expect("num_workers to be less than 2^32"),
         )
-        .connect_with(settings.database_url)
+        .connect_with(settings_clone.database_url)
         .await?;
     sqlx::migrate!().run(&db_pool).await?;
 
-    Bridge::run(db_pool, settings.queue_size, udp_socket).await
+    Bridge::run(db_pool, settings, udp_socket).await
 }

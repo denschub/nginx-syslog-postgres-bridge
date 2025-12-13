@@ -1,23 +1,23 @@
 use anyhow::{Error, Result};
-use sqlx::PgPool;
+use sqlx::{PgPool, postgres::PgQueryResult};
 use tokio::{
     net::UdpSocket,
     sync::mpsc::{Receiver, Sender, channel},
 };
-use tracing::{info, trace};
+use tracing::{debug, error, trace};
 
-use crate::parsers::AccessLogEntry;
+use crate::{AccessLogColumnVecs, Settings, parsers::AccessLogEntry};
 
 pub struct Bridge {}
 
 impl Bridge {
-    pub async fn run(db_pool: PgPool, queue_size: usize, udp_socket: UdpSocket) -> Result<()> {
-        let (tx, rx) = channel::<AccessLogEntry>(queue_size);
+    pub async fn run(db_pool: PgPool, settings: Settings, udp_socket: UdpSocket) -> Result<()> {
+        let (tx, rx) = channel::<String>(settings.queue_size);
 
         let udp_receiver = UdpReceiver::new(tx, udp_socket);
         let receiving_loop = tokio::spawn(async move { udp_receiver.run().await });
 
-        let mut queue_item_storer = QueueItemStorer::new(db_pool, rx);
+        let mut queue_item_storer = QueueItemStorer::new(db_pool, settings.insert_batch_size, rx);
         let storing_loop = tokio::spawn(async move { queue_item_storer.run().await });
 
         tokio::select! {
@@ -30,12 +30,12 @@ impl Bridge {
 }
 
 pub struct UdpReceiver {
-    received_sender: Sender<AccessLogEntry>,
+    received_sender: Sender<String>,
     socket: UdpSocket,
 }
 
 impl UdpReceiver {
-    pub fn new(received_sender: Sender<AccessLogEntry>, socket: UdpSocket) -> Self {
+    pub fn new(received_sender: Sender<String>, socket: UdpSocket) -> Self {
         Self {
             received_sender,
             socket,
@@ -50,26 +50,92 @@ impl UdpReceiver {
 
         loop {
             if let Ok((len, addr)) = self.socket.recv_from(&mut buf).await {
-                info!("Received {} bytes from {}", len, addr);
+                debug!("Received {} bytes from {}", len, addr);
 
                 let buf = buf[0..len].to_owned();
                 let tx_clone = self.received_sender.clone();
                 tokio::spawn(async move {
-                    if let Ok(line) = std::str::from_utf8(&buf) {
+                    if let Ok(line) = String::from_utf8(buf) {
                         trace!("Raw message: `{}`", line);
-                        if let Ok(entry) = Self::parse_datagram(line).await {
-                            // Silently drop send errors. This will fail if
-                            // There's too much traffic, but if that's the case,
-                            // spamming things to STDOUT doesn't help.
-                            let _ = tx_clone.try_send(entry);
-                        }
+                        // Silently drop send errors. This will fail if
+                        // There's too much traffic, but if that's the case,
+                        // spamming things to STDOUT doesn't help.
+                        let _ = tx_clone.try_send(line);
                     }
                 });
             }
         }
     }
+}
 
-    async fn parse_datagram(datagram: &str) -> Result<AccessLogEntry> {
+struct QueueItemStorer {
+    db_pool: PgPool,
+    insert_batch_size: usize,
+    insert_field_vecs: AccessLogColumnVecs,
+    receiver: Receiver<String>,
+}
+
+impl QueueItemStorer {
+    pub fn new(db_pool: PgPool, insert_batch_size: usize, receiver: Receiver<String>) -> Self {
+        Self {
+            db_pool,
+            insert_batch_size,
+            insert_field_vecs: AccessLogColumnVecs::with_capacity(insert_batch_size),
+            receiver,
+        }
+    }
+
+    async fn store_batch(&mut self, batch: &Vec<String>) -> Result<PgQueryResult, sqlx::Error> {
+        self.insert_field_vecs.clear();
+        for line in batch {
+            if let Ok(entry) = Self::parse_datagram(line) {
+                self.insert_field_vecs.push(entry);
+            }
+        }
+
+        // Note: If any columns are added, removed, renamed, reorderd, or
+        // otherwise touched, make sure to update [AccessLogColumnVecs].
+        let query = sqlx::query(
+            r#"
+            INSERT INTO access_log (
+                id, hostname, event_ts, server_name, server_port, client_addr, client_forwarded_for, client_referer,
+                client_ua, req_host, req_length, req_method, req_proto, req_scheme, req_uri, res_body_length,
+                res_duration, res_length, res_status, upstream_addr, upstream_bytes_received, upstream_bytes_sent,
+                upstream_cache_status, upstream_connect_time, upstream_host, upstream_response_length,
+                upstream_response_time, upstream_status
+            ) SELECT * FROM UNNEST(
+                $1::uuid[], $2::text[], $3::timestamptz[], $4::text[], $5::int4[], $6::text[], $7::text[], $8::text[],
+                $9::text[], $10::text[], $11::int8[], $12::text[], $13::text[], $14::text[], $15::text[], $16::int8[],
+                $17::float8[], $18::int8[], $19::int4[], $20::text[], $21::int8[], $22::int8[], $23::text[],
+                $24::float8[], $25::text[], $26::int8[], $27::float8[], $28::int4[]
+            )"#,
+        );
+
+        self.insert_field_vecs
+            .bind_all(query)
+            .execute(&self.db_pool)
+            .await
+    }
+
+    pub async fn run(&mut self) {
+        let mut batch: Vec<String> = Vec::with_capacity(self.insert_batch_size);
+        loop {
+            let received = self
+                .receiver
+                .recv_many(&mut batch, self.insert_batch_size)
+                .await;
+            if received > 0 {
+                if let Err(err) = self.store_batch(&batch).await {
+                    error!("Inserting into database failed: {:?}", err);
+                }
+                debug!("Processed batch of {} entries", received);
+            }
+
+            batch.clear();
+        }
+    }
+
+    fn parse_datagram(datagram: &str) -> Result<AccessLogEntry> {
         // at the moment, I'm completely ignoring everything provided by syslog
         // except the message. I could skip the syslog parsing, and just look for
         // the opening {, then read from there.
@@ -77,97 +143,5 @@ impl UdpReceiver {
         // error_log as well... so let's keep this for now.
         let syslog = syslog_loose::parse_message(datagram, syslog_loose::Variant::Either);
         serde_json::from_str(syslog.msg).map_err(Error::msg)
-    }
-}
-
-struct QueueItemStorer {
-    db_pool: PgPool,
-    receiver: Receiver<AccessLogEntry>,
-}
-
-impl QueueItemStorer {
-    pub fn new(db_pool: PgPool, receiver: Receiver<AccessLogEntry>) -> Self {
-        Self { db_pool, receiver }
-    }
-
-    pub async fn store_single(&self, entry: &AccessLogEntry) -> Result<()> {
-        sqlx::query!(
-            r#"
-            INSERT INTO access_log (
-                id,
-                event_ts,
-                hostname,
-                server_name,
-                server_port,
-                client_addr,
-                client_forwarded_for,
-                client_referer,
-                client_ua,
-                req_host,
-                req_length,
-                req_method,
-                req_proto,
-                req_scheme,
-                req_uri,
-                res_body_length,
-                res_duration,
-                res_length,
-                res_status,
-                upstream_addr,
-                upstream_bytes_received,
-                upstream_bytes_sent,
-                upstream_cache_status,
-                upstream_connect_time,
-                upstream_host,
-                upstream_response_length,
-                upstream_response_time,
-                upstream_status
-            )
-            VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-                $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28
-            )
-            "#,
-            uuid::Uuid::new_v4(),
-            entry.ts,
-            entry.hostname,
-            entry.server.name,
-            entry.server.port,
-            entry.client.addr,
-            entry.client.forwarded_for,
-            entry.client.referer,
-            entry.client.ua,
-            entry.req.host,
-            entry.req.length,
-            entry.req.method,
-            entry.req.proto,
-            entry.req.scheme,
-            entry.req.uri,
-            entry.res.body_length,
-            entry.res.duration,
-            entry.res.length,
-            entry.res.status,
-            entry.upstream.addr,
-            entry.upstream.bytes_received,
-            entry.upstream.bytes_sent,
-            entry.upstream.cache_status,
-            entry.upstream.connect_time,
-            entry.upstream.host,
-            entry.upstream.response_length,
-            entry.upstream.response_time,
-            entry.upstream.status
-        )
-        .execute(&self.db_pool)
-        .await?;
-
-        Ok(())
-    }
-
-    pub async fn run(&mut self) {
-        loop {
-            if let Some(entry) = self.receiver.recv().await {
-                let _ = self.store_single(&entry).await;
-            }
-        }
     }
 }

@@ -1,5 +1,9 @@
 # 3.0.0 (unreleased)
 
+This version moves away from individual `INSERT` statements for each individual request. Instead, database insertions are batched via large `INSERT INTO ... SELECT * FROM UNNEST` queries. This significantly increases the throughput, while also reducing database server load.
+
+- A new setting, `--insert-batch-size`/`INSERT_BATCH_SIZE`, is available to set the size of batch insertions.
+
 # 2.1.4
 
 This version does not contain any functional changes. It only updates third-party dependencies.

@@ -2,13 +2,19 @@ use std::net::SocketAddr;
 
 use sqlx::postgres::PgConnectOptions;
 
-#[derive(Debug, clap::Parser)]
+#[derive(Clone, Debug, clap::Parser)]
 #[clap(about, version, propagate_version = true)]
 pub struct Settings {
     /// The database URL to connect to. Needs to be a valid libpq
     /// connection URL, like `postgres://postgres@127.0.0.1/nginx_logs`
     #[clap(long, short, env = "DATABASE_URL")]
     pub database_url: PgConnectOptions,
+
+    /// The maximum size of one INSERT batch to dump into the database. If set
+    /// to 1 (default), no batching will occur and all requests will be inserted
+    /// immediately.
+    #[clap(long, short, env = "INSERT_BATCH_SIZE", default_value = "1")]
+    pub insert_batch_size: usize,
 
     /// The Socket Address the server should listen on
     #[clap(long, short, env = "LISTEN_ADDR", default_value = "[::1]:8514")]
