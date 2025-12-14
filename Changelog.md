@@ -2,8 +2,10 @@
 
 This version moves away from individual `INSERT` statements for each individual request. Instead, database insertions are batched via large `INSERT INTO ... SELECT * FROM UNNEST` queries. This significantly increases the throughput, while also reducing database server load.
 
-- A new setting, `--insert-batch-size`/`INSERT_BATCH_SIZE`, is available to set the size of batch insertions.
-- Another setting, `--insert-timeout`/`INSERT_TIMEOUT`, exists to throttle `INSERT` queries. If the buffer doesn't immediately reaches `INSERT_BATCH_SIZE`, the tool waits `INSERT_TIMEOUT` milliseconds before inserting the log entries into the database. Defaults to 250 milliseconds.
+- **Potentially breaking**: The short setting CLI flags, like `-d` for `--database-url` have been removed. If you used those, please migrate to the long form names or environment variables.
+- **Potentially breaking**: The default value for `QUEUE_SIZE` has been dropped to 50. Unless you handle hundreds of requests per second, this should not matter to you.
+- A new setting, `--insert-batch-size`/`INSERT_BATCH_SIZE`, is available to set the size of batch insertions. The default batch size is 10, which should be fine for small setups.
+- Another setting, `--insert-timeout`/`INSERT_TIMEOUT`, exists to throttle `INSERT` queries. If the buffer doesn't immediately reaches `INSERT_BATCH_SIZE`, the tool waits `INSERT_TIMEOUT` milliseconds before inserting the log entries into the database. Defaults to 1 second.
 
 # 2.1.4
 
