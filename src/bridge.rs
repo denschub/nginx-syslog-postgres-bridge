@@ -3,8 +3,9 @@ use sqlx::{PgPool, postgres::PgQueryResult};
 use tokio::{
     net::UdpSocket,
     sync::mpsc::{Receiver, Sender, channel},
+    time::Duration,
 };
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, trace, warn};
 
 use crate::{AccessLogColumnVecs, Settings, parsers::AccessLogEntry};
 
@@ -17,7 +18,12 @@ impl Bridge {
         let udp_receiver = UdpReceiver::new(tx, udp_socket);
         let receiving_loop = tokio::spawn(async move { udp_receiver.run().await });
 
-        let mut queue_item_storer = QueueItemStorer::new(db_pool, settings.insert_batch_size, rx);
+        let mut queue_item_storer = QueueItemStorer::new(
+            db_pool,
+            settings.insert_batch_size,
+            settings.insert_timeout,
+            rx,
+        );
         let storing_loop = tokio::spawn(async move { queue_item_storer.run().await });
 
         tokio::select! {
@@ -71,15 +77,22 @@ impl UdpReceiver {
 struct QueueItemStorer {
     db_pool: PgPool,
     insert_batch_size: usize,
+    insert_timeout: Duration,
     insert_field_vecs: AccessLogColumnVecs,
     receiver: Receiver<String>,
 }
 
 impl QueueItemStorer {
-    pub fn new(db_pool: PgPool, insert_batch_size: usize, receiver: Receiver<String>) -> Self {
+    pub fn new(
+        db_pool: PgPool,
+        insert_batch_size: usize,
+        insert_timeout: u64,
+        receiver: Receiver<String>,
+    ) -> Self {
         Self {
             db_pool,
             insert_batch_size,
+            insert_timeout: Duration::from_millis(insert_timeout),
             insert_field_vecs: AccessLogColumnVecs::with_capacity(insert_batch_size),
             receiver,
         }
@@ -124,13 +137,29 @@ impl QueueItemStorer {
                 .receiver
                 .recv_many(&mut batch, self.insert_batch_size)
                 .await;
-            if received > 0 {
-                if let Err(err) = self.store_batch(&batch).await {
-                    error!("Inserting into database failed: {:?}", err);
-                }
-                debug!("Processed batch of {} entries", received);
+            if received < 1 {
+                warn!("Channel closed, exiting storer loop...");
+                return;
             }
 
+            let mut batch_size = batch.len();
+            if batch_size < self.insert_batch_size {
+                debug!("Insert batch not yet full, waiting for more or timeout...");
+                let _ = tokio::time::timeout(self.insert_timeout, async {
+                    while batch_size < self.insert_batch_size {
+                        let remaining = self.insert_batch_size - batch_size;
+                        let _ = self.receiver.recv_many(&mut batch, remaining).await;
+                        batch_size = batch.len();
+                    }
+                })
+                .await;
+            }
+
+            if let Err(err) = self.store_batch(&batch).await {
+                error!("Inserting into database failed: {:?}", err);
+            }
+
+            info!("Processed batch of {} entries", batch_size);
             batch.clear();
         }
     }

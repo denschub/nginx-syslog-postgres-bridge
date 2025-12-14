@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, bail};
 use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
 
@@ -6,6 +6,10 @@ use nginx_syslog_postgres_bridge::{Bridge, Settings};
 
 fn main() -> Result<()> {
     let settings = Settings::parse();
+
+    if settings.insert_batch_size < 1 {
+        bail!("INSERT_BATCH_SIZE must be at least 1!");
+    }
 
     let mut rt = tokio::runtime::Builder::new_multi_thread();
     if let Some(threads) = settings.threads {

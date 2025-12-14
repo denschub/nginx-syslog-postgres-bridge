@@ -10,11 +10,17 @@ pub struct Settings {
     #[clap(long, short, env = "DATABASE_URL")]
     pub database_url: PgConnectOptions,
 
-    /// The maximum size of one INSERT batch to dump into the database. If set
-    /// to 1 (default), no batching will occur and all requests will be inserted
-    /// immediately.
-    #[clap(long, short, env = "INSERT_BATCH_SIZE", default_value = "1")]
+    /// The maximum size of one INSERT batch to dump into the database. Must be
+    /// at least 1
+    #[clap(long, short('b'), env = "INSERT_BATCH_SIZE", default_value = "10")]
     pub insert_batch_size: usize,
+
+    /// To reduce database load, we wait at least this amount of milliseconds
+    /// before firing a batched insert query to give the buffer the time to
+    /// reach INSERT_BATCH_SIZE. If the buffer is full, however, we ignore this
+    /// time limit.
+    #[clap(long, short, env = "INSERT_TIMEOUT", default_value = "250")]
+    pub insert_timeout: u64,
 
     /// The Socket Address the server should listen on
     #[clap(long, short, env = "LISTEN_ADDR", default_value = "[::1]:8514")]
@@ -25,6 +31,6 @@ pub struct Settings {
     pub queue_size: usize,
 
     /// Limits the number of threads used - defaults to the number of CPU cores
-    #[clap(long, env = "THREADS")]
+    #[clap(long, short, env = "THREADS")]
     pub threads: Option<usize>,
 }

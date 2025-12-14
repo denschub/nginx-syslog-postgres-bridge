@@ -8,6 +8,7 @@ pub async fn spawn_test_server(db_pool: PgPool) -> String {
     let settings = Settings {
         database_url: PgConnectOptions::new(),
         insert_batch_size: 1,
+        insert_timeout: 100,
         listen_addr: std::net::SocketAddr::from_str("127.0.0.1:0").unwrap(),
         queue_size: 100,
         threads: None,
