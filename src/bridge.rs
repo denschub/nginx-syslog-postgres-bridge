@@ -7,7 +7,7 @@ use tokio::{
 };
 use tracing::{debug, error, info, trace, warn};
 
-use crate::{AccessLogColumnVecs, Settings, parsers::AccessLogEntry};
+use crate::{AccessLogColumnVecs, parsers::AccessLogEntry, settings::Settings};
 
 pub struct Bridge {}
 

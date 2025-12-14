@@ -26,5 +26,5 @@ sqlx = { version = "0.8", features = [
 syslog_loose = "0.23"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["json"] }
 uuid = { version = "1", features = ["v4"] }

@@ -6,6 +6,7 @@ This version moves away from individual `INSERT` statements for each individual 
 - **Potentially breaking**: The default value for `QUEUE_SIZE` has been dropped to 50. Unless you handle hundreds of requests per second, this should not matter to you.
 - A new setting, `--insert-batch-size`/`INSERT_BATCH_SIZE`, is available to set the size of batch insertions. The default batch size is 10, which should be fine for small setups.
 - Another setting, `--insert-timeout`/`INSERT_TIMEOUT`, exists to throttle `INSERT` queries. If the buffer doesn't immediately reaches `INSERT_BATCH_SIZE`, the tool waits `INSERT_TIMEOUT` milliseconds before inserting the log entries into the database. Defaults to 1 second.
+- You can now set the log level and log output format. Run with `--help` to see the available flags and values.
 
 # 2.1.4
 

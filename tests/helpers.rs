@@ -2,7 +2,10 @@ use sqlx::{PgPool, postgres::PgConnectOptions};
 use std::{str::FromStr, time::Duration};
 use tokio::time::sleep;
 
-use nginx_syslog_postgres_bridge::{Bridge, Settings};
+use nginx_syslog_postgres_bridge::{
+    Bridge,
+    settings::{LogFormat, LogLevel, Settings},
+};
 
 pub async fn spawn_test_server(db_pool: PgPool) -> String {
     let settings = Settings {
@@ -10,6 +13,8 @@ pub async fn spawn_test_server(db_pool: PgPool) -> String {
         insert_batch_size: 1,
         insert_timeout: 100,
         listen_addr: std::net::SocketAddr::from_str("127.0.0.1:0").unwrap(),
+        log_format: LogFormat::TextColor,
+        log_level: LogLevel::Trace,
         queue_size: 100,
         threads: None,
     };

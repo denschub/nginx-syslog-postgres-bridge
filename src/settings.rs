@@ -2,6 +2,38 @@ use std::net::SocketAddr;
 
 use sqlx::postgres::PgConnectOptions;
 
+/// Specifies the log's output format
+#[derive(clap::ValueEnum, Clone, Debug)]
+pub enum LogFormat {
+    Text,
+    TextColor,
+    Json,
+}
+
+/// Specifies how much log output the app generates
+#[derive(clap::ValueEnum, Clone, Debug)]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+}
+
+impl LogLevel {
+    pub fn tracing_level(&self) -> tracing::Level {
+        use tracing::Level;
+
+        match self {
+            LogLevel::Trace => Level::TRACE,
+            LogLevel::Debug => Level::DEBUG,
+            LogLevel::Info => Level::INFO,
+            LogLevel::Warn => Level::WARN,
+            LogLevel::Error => Level::ERROR,
+        }
+    }
+}
+
 #[derive(Clone, Debug, clap::Parser)]
 #[clap(about, version, propagate_version = true)]
 pub struct Settings {
@@ -25,6 +57,14 @@ pub struct Settings {
     /// The Socket Address the server should listen on
     #[clap(long, env = "LISTEN_ADDR", default_value = "[::1]:8514")]
     pub listen_addr: SocketAddr,
+
+    /// Defines how the log output will be formatted
+    #[clap(value_enum, long, env = "LOG_FORMAT", default_value_t = LogFormat::TextColor)]
+    pub log_format: LogFormat,
+
+    /// Defines how noisy the server should be
+    #[clap(value_enum, long, env = "LOG_LEVEL", default_value_t = LogLevel::Warn)]
+    pub log_level: LogLevel,
 
     /// Maximum number of messages in the processing queue
     #[clap(long, env = "QUEUE_SIZE", default_value = "50")]

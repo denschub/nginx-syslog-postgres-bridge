@@ -2,7 +2,7 @@ use anyhow::{Result, bail};
 use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
 
-use nginx_syslog_postgres_bridge::{Bridge, Settings};
+use nginx_syslog_postgres_bridge::{Bridge, settings::LogFormat, settings::Settings};
 
 fn main() -> Result<()> {
     let settings = Settings::parse();
@@ -22,7 +22,14 @@ fn main() -> Result<()> {
 }
 
 async fn run(settings: Settings) -> Result<()> {
-    tracing_subscriber::fmt::init();
+    let subscriber = tracing_subscriber::fmt()
+        .with_max_level(settings.log_level.tracing_level())
+        .with_target(false);
+    match settings.log_format {
+        LogFormat::Text => subscriber.with_ansi(false).init(),
+        LogFormat::TextColor => subscriber.with_ansi(true).init(),
+        LogFormat::Json => subscriber.json().with_span_list(false).init(),
+    }
 
     let settings_clone = settings.clone();
     let udp_socket = tokio::net::UdpSocket::bind(settings_clone.listen_addr).await?;
