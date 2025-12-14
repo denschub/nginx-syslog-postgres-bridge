@@ -1,3 +1,5 @@
+# 3.0.0 (unreleased)
+
 # 2.1.4
 
 This version does not contain any functional changes. It only updates third-party dependencies.
