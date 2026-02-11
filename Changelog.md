@@ -1,3 +1,7 @@
+# 3.0.1
+
+This version does not contain any functional changes. It only updates third-party dependencies.
+
 # 3.0.0
 
 This version moves away from individual `INSERT` statements for each individual request. Instead, database insertions are batched via large `INSERT INTO ... SELECT * FROM UNNEST` queries. This significantly increases the throughput, while also reducing database server load.
