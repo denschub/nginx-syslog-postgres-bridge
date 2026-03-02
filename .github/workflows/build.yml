@@ -37,7 +37,7 @@ jobs:
           docker cp $container:/app/nginx-syslog-postgres-bridge .
           echo "version=$(./nginx-syslog-postgres-bridge --version | awk -F ' ' '{print $2}')" >> $GITHUB_OUTPUT
           tar -cvf nginx-syslog-postgres-bridge.tar nginx-syslog-postgres-bridge
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: nginx-syslog-postgres-bridge-${{ steps.artifact_packaging.outputs.version }}-linux-amd64.tar
           path: ./out/nginx-syslog-postgres-bridge.tar
