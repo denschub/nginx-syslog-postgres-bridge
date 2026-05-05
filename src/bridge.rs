@@ -1,7 +1,7 @@
 use anyhow::{Error, Result};
 use sqlx::{PgPool, postgres::PgQueryResult};
 use tokio::{
-    net::UdpSocket,
+    net::{UdpSocket, UnixDatagram},
     sync::mpsc::{Receiver, Sender, channel},
     time::Duration,
 };
@@ -9,14 +9,46 @@ use tracing::{debug, error, info, trace, warn};
 
 use crate::{AccessLogColumnVecs, parsers::AccessLogEntry, settings::Settings};
 
+pub enum SyslogSocket {
+    Udp(UdpSocket),
+    Unix(UnixDatagram),
+}
+
+impl From<UdpSocket> for SyslogSocket {
+    fn from(value: UdpSocket) -> Self {
+        Self::Udp(value)
+    }
+}
+
+impl From<UnixDatagram> for SyslogSocket {
+    fn from(value: UnixDatagram) -> Self {
+        Self::Unix(value)
+    }
+}
+
+impl SyslogSocket {
+    async fn recv_from(&self, buf: &mut [u8]) -> std::io::Result<(usize, Option<String>)> {
+        match self {
+            SyslogSocket::Udp(socket) => {
+                let (len, addr) = socket.recv_from(buf).await?;
+                Ok((len, Some(addr.to_string())))
+            }
+            SyslogSocket::Unix(socket) => {
+                let (len, _) = socket.recv_from(buf).await?;
+                Ok((len, None))
+            }
+        }
+    }
+}
+
 pub struct Bridge {}
 
 impl Bridge {
-    pub async fn run(db_pool: PgPool, settings: Settings, udp_socket: UdpSocket) -> Result<()> {
+    pub async fn run(db_pool: PgPool, settings: Settings, socket: SyslogSocket) -> Result<()> {
         let (tx, rx) = channel::<String>(settings.queue_size);
 
-        let udp_receiver = UdpReceiver::new(tx, udp_socket);
-        let receiving_loop = tokio::spawn(async move { udp_receiver.run().await });
+        let receiver = SyslogReceiver::new(tx, socket);
+        let receiving_loop = tokio::spawn(async move { receiver.run().await });
 
         let mut queue_item_storer = QueueItemStorer::new(
             db_pool,
@@ -35,13 +67,13 @@ impl Bridge {
     }
 }
 
-pub struct UdpReceiver {
+pub struct SyslogReceiver {
     received_sender: Sender<String>,
-    socket: UdpSocket,
+    socket: SyslogSocket,
 }
 
-impl UdpReceiver {
-    pub fn new(received_sender: Sender<String>, socket: UdpSocket) -> Self {
+impl SyslogReceiver {
+    pub fn new(received_sender: Sender<String>, socket: SyslogSocket) -> Self {
         Self {
             received_sender,
             socket,
@@ -51,12 +83,16 @@ impl UdpReceiver {
     pub async fn run(&self) {
         // As per RFC5426, a syslog-via-udp message can only ever be one UDP
         // datagram long, not more. So we know the maximum ever length of that,
-        // and the size is small enough to just allocate everything.
+        // and the size is small enough to just allocate everything. The limit
+        // is higher if it's using a Unix socket, but let's stay consistent...
         let mut buf = [0; 65535];
 
         loop {
             if let Ok((len, addr)) = self.socket.recv_from(&mut buf).await {
-                debug!("Received {} bytes from {}", len, addr);
+                match addr {
+                    Some(addr) => debug!("Received {} bytes from {}", len, addr),
+                    None => debug!("Received {} bytes", len),
+                }
 
                 let buf = buf[0..len].to_owned();
                 let tx_clone = self.received_sender.clone();

@@ -1,6 +1,7 @@
 use anyhow::{Result, bail};
 use clap::Parser;
 use sqlx::postgres::PgPoolOptions;
+use std::path::Path;
 
 use nginx_syslog_postgres_bridge::{Bridge, settings::LogFormat, settings::Settings};
 
@@ -32,7 +33,20 @@ async fn run(settings: Settings) -> Result<()> {
     }
 
     let settings_clone = settings.clone();
-    let udp_socket = tokio::net::UdpSocket::bind(settings_clone.listen_addr).await?;
+    let socket = match settings_clone.listen_addr.strip_prefix("unix:") {
+        Some(path) => {
+            let path = Path::new(path);
+            if path.exists() {
+                tokio::fs::remove_file(path).await?;
+            }
+
+            tokio::net::UnixDatagram::bind(path)?.into()
+        }
+        None => tokio::net::UdpSocket::bind(&settings_clone.listen_addr)
+            .await?
+            .into(),
+    };
+
     let db_pool = PgPoolOptions::new()
         .max_connections(
             tokio::runtime::Handle::current()
@@ -45,5 +59,5 @@ async fn run(settings: Settings) -> Result<()> {
         .await?;
     sqlx::migrate!().run(&db_pool).await?;
 
-    Bridge::run(db_pool, settings, udp_socket).await
+    Bridge::run(db_pool, settings, socket).await
 }

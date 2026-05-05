@@ -18,6 +18,8 @@ This bridge does not run any authentication, authorization, or validation. Any v
 
 All data sent to this application is sent unencrypted over UDP. While there are syslog transport mechanisms via TCP and encryption, [nginx does not support those][nginx-syslog]. If logging data is sent over an untrusted network, encrypted tunneling is recommended since the log format includes PII (namely, the user's IP).
 
+If your nginx and this bridge run on the same host, you can set `LISTEN_ADDR` to use a local unix socket path, which will completely bypass the network.
+
 ## Performance considerations
 
 Because nginx is just firing UDP datagrams towards this application with no regard for anything, this application is designed to process incoming UDP traffic as fast as possible. Each incoming UDP datagram is immediately spawned off into a different task to make room for more UDP traffic. It's then sent to another thread for parsing and batch-inserting.

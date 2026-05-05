@@ -1,5 +1,5 @@
 use sqlx::{PgPool, postgres::PgConnectOptions};
-use std::{str::FromStr, time::Duration};
+use std::time::Duration;
 use tokio::time::sleep;
 
 use nginx_syslog_postgres_bridge::{
@@ -12,19 +12,19 @@ pub async fn spawn_test_server(db_pool: PgPool) -> String {
         database_url: PgConnectOptions::new(),
         insert_batch_size: 1,
         insert_timeout: 100,
-        listen_addr: std::net::SocketAddr::from_str("127.0.0.1:0").unwrap(),
+        listen_addr: "127.0.0.1:0".to_string(),
         log_format: LogFormat::TextColor,
         log_level: LogLevel::Trace,
         queue_size: 100,
         threads: None,
     };
 
-    let socket = tokio::net::UdpSocket::bind(settings.listen_addr)
+    let socket = tokio::net::UdpSocket::bind(&settings.listen_addr)
         .await
         .unwrap();
     let listening_port = socket.local_addr().unwrap().port();
 
-    tokio::spawn(Bridge::run(db_pool, settings, socket));
+    tokio::spawn(Bridge::run(db_pool, settings, socket.into()));
 
     format!("127.0.0.1:{}", listening_port)
 }

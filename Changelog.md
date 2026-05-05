@@ -1,3 +1,9 @@
+# unreleased
+
+If your webserver and this bridge are running on the same host, you can now set the `LISTEN_ADDR` to a unix socket path (like `unix:/var/run/ngxslpg.sock`) as an alternative to the UDP socket. This cuts some network overhead if needed.
+
+This is not a breaking change: the default behavior remains unchanged and previously working values continue to work.
+
 # 3.0.1
 
 This version does not contain any functional changes. It only updates third-party dependencies.

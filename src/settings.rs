@@ -1,5 +1,3 @@
-use std::net::SocketAddr;
-
 use sqlx::postgres::PgConnectOptions;
 
 /// Specifies the log's output format
@@ -54,9 +52,11 @@ pub struct Settings {
     #[clap(long, env = "INSERT_TIMEOUT", default_value = "1000")]
     pub insert_timeout: u64,
 
-    /// The Socket Address the server should listen on
+    /// Where the server should listen on. This can be either a UDP socket
+    /// address (`127.0.0.1:8514`), or a unix domain socket path prefixed with
+    /// `unix:` (`unix:/var/run/ngxslpg.sock`).
     #[clap(long, env = "LISTEN_ADDR", default_value = "[::1]:8514")]
-    pub listen_addr: SocketAddr,
+    pub listen_addr: String,
 
     /// Defines how the log output will be formatted
     #[clap(value_enum, long, env = "LOG_FORMAT", default_value_t = LogFormat::TextColor)]
